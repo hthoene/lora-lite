@@ -1,0 +1,46 @@
+services:
+  lora-lite:
+    build:
+      context: .
+      dockerfile: Dockerfile.amd
+
+    container_name: lora-lite
+    restart: unless-stopped
+
+    user: "1000:1000"
+    group_add:
+      - "44"
+      - "992"
+
+    devices:
+      - /dev/kfd
+      - /dev/dri
+
+    security_opt:
+      - seccomp=unconfined
+
+    ipc: host
+    shm_size: "16g"
+
+    ports:
+      - "127.0.0.1:8080:8080"
+
+    volumes:
+      - ./target/app.jar:/workspace/app.jar
+      - ./data/dataset:/workspace/dataset
+      - ./data/output:/workspace/output
+      - ./data/configs:/workspace/configs
+      - ./data/logs:/workspace/logs
+      - ./data/hf-cache:/workspace/.cache/huggingface
+      - ./data/archive:/workspace/archive
+      - ./data/templates:/workspace/templates
+
+    environment:
+      - VAADIN_PRODUCTION_MODE=true
+      - AI_TOOLKIT_AUTH=${AI_TOOLKIT_AUTH:-password}
+      - HF_HOME=/workspace/.cache/huggingface
+      - TRANSFORMERS_CACHE=/workspace/.cache/huggingface
+
+    working_dir: /workspace
+
+    command: ["/bin/bash", "-c", "cd /workspace/ai-toolkit && tail -f /dev/null"]

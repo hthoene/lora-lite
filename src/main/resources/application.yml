@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: LoRA-Lite
+  docker:
+    compose:
+      enabled: false
+  servlet:
+    multipart:
+      max-file-size: 50MB

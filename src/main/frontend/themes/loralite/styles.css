@@ -1,0 +1,34 @@
+html {
+    --lumo-border-radius: calc(var(--lumo-size-m) / 2);
+}
+
+* {
+    scrollbar-gutter: stable;
+}
+
+[theme~="dark"] {
+    --lumo-base-color: hsl(252, 12%, 6%);
+    --lumo-shade-5pct: rgba(22, 23, 44, 0.05);
+    --lumo-shade-10pct: rgba(22, 23, 44, 0.1);
+    --lumo-shade-20pct: rgba(22, 23, 44, 0.2);
+    --lumo-shade-30pct: rgba(22, 23, 44, 0.3);
+    --lumo-shade-40pct: rgba(22, 23, 44, 0.4);
+    --lumo-shade-50pct: rgba(22, 23, 44, 0.5);
+    --lumo-shade-60pct: rgba(22, 23, 44, 0.6);
+    --lumo-shade-70pct: rgba(22, 23, 44, 0.7);
+    --lumo-shade-80pct: rgba(22, 23, 44, 0.8);
+    --lumo-shade-90pct: rgba(22, 23, 44, 0.9);
+    --lumo-shade: hsl(239, 33%, 13%);
+    --lumo-primary-text-color: rgb(160, 112, 215);
+    --lumo-primary-color-50pct: rgba(121, 69, 181, 0.5);
+    --lumo-primary-color-10pct: rgba(121, 69, 181, 0.1);
+    --lumo-primary-color: hsl(268, 45%, 49%);
+    --lumo-error-text-color: rgb(230, 185, 183);
+    --lumo-error-color-50pct: rgba(184, 86, 81, 0.5);
+    --lumo-error-color-10pct: rgba(184, 86, 81, 0.1);
+    --lumo-error-color: hsl(3, 42%, 52%);
+    --lumo-success-text-color: rgb(183, 209, 194);
+    --lumo-success-color-50pct: rgba(69, 115, 88, 0.5);
+    --lumo-success-color-10pct: rgba(69, 115, 88, 0.1);
+    --lumo-success-color: hsl(145, 25%, 36%);
+}

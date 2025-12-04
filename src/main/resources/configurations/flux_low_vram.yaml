@@ -1,0 +1,92 @@
+job: extension
+
+config:
+  name: latest
+  process:
+    - type: sd_trainer
+      training_folder: /workspace/output
+      performance_log_every: 100
+      device: cuda
+      trigger_word: "<token>"
+
+      network:
+        type: lora
+        linear: 4
+        linear_alpha: 4
+        network_kwargs:
+          only_if_contains:
+            - attn
+            - to_q
+            - to_k
+            - to_v
+          ignore_if_contains:
+            - img_enc
+            - text_enc
+        extra: {}
+
+      save:
+        dtype: bf16
+        save_every: 500
+        max_step_saves_to_keep: 3
+        push_to_hub: false
+        hf_repo_id: null
+        hf_private: true
+        extra: {}
+
+      datasets:
+        - folder_path: /workspace/dataset
+          caption_ext: ".txt"
+          caption_dropout_rate: 0.1
+          shuffle_tokens: true
+          cache_latents_to_disk: true
+          resolution: [512, 512]
+          extra: {}
+
+      train:
+        batch_size: 1
+        steps: 1800
+        gradient_accumulation_steps: 2
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: flowmatch
+        optimizer: adafactor
+        lr: 0.0001
+        skip_first_sample: true
+        disable_sampling: false
+        linear_timesteps: false
+        ema_config:
+          use_ema: true
+          ema_decay: 0.999
+          extra: {}
+        dtype: bf16
+        extra: {}
+
+      model:
+        name_or_path: black-forest-labs/FLUX.1-dev
+        is_flux: true
+        quantize: true
+        low_vram: true
+        assistant_lora_path: null
+        extra: {}
+
+      sample:
+        sampler: flowmatch
+        sample_every: 50
+        width: 512
+        height: 512
+        prompts:
+          - "photo of <token>"
+        neg: "low quality, blurry"
+        seed: 1234567
+        walk_seed: true
+        guidance_scale: 4.0
+        sample_steps: 20
+        extra: {}
+
+      extra: {}
+
+meta:
+  name: LoRA-Lite Low VRAM
+  version: "1.0.0"
+  extra: {}

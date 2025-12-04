@@ -1,0 +1,42 @@
+FROM nvcr.io/nvidia/pytorch:24.10-py3
+
+RUN groupadd -g 1000 appgroup || true && \
+    useradd -m -u 1000 -g 1000 -s /bin/bash appuser
+
+WORKDIR /workspace
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        git \
+        curl \
+        wget \
+        ca-certificates \
+        openjdk-25-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+RUN git clone https://github.com/ostris/ai-toolkit.git /workspace/ai-toolkit
+WORKDIR /workspace/ai-toolkit
+
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --upgrade "transformers>=4.45.0"
+
+WORKDIR /workspace
+RUN chown -R 1000:1000 /workspace
+
+COPY gpu-monitor/gpu_monitor.py /workspace/monitor/gpu_monitor.py
+RUN chmod +x /workspace/monitor/gpu_monitor.py && \
+    chown -R 1000:1000 /workspace/monitor
+
+COPY templates/ /workspace/templates
+
+COPY target/app.jar /workspace/app.jar
+RUN chown 1000:1000 /workspace/app.jar
+
+EXPOSE 8080
+
+USER 1000:1000
+ENTRYPOINT ["java", "-jar", "/workspace/app.jar"]
