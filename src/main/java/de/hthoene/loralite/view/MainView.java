@@ -64,7 +64,7 @@ public class MainView extends VerticalLayout {
         LogView logView = new LogView(logPanel);
         logView.setAlignItems(Alignment.STRETCH);
 
-        this.processPage = new ProcessView(gpuMonitor, logPanel, workspaceProperties);
+        this.processPage = new ProcessView(gpuMonitor, logPanel, workspaceProperties, aiToolkitService);
 
         SplitLayout splitLayout = new SplitLayout(primaryLayout, logView);
         splitLayout.setSplitterPosition(60);

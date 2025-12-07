@@ -1,6 +1,7 @@
 package de.hthoene.loralite.view;
 
 import com.vaadin.flow.component.Unit;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -10,6 +11,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
+import de.hthoene.loralite.aitoolkit.AiToolkitService;
 import de.hthoene.loralite.component.LogPanel;
 import de.hthoene.loralite.util.GpuInfo;
 import de.hthoene.loralite.util.GpuMonitor;
@@ -33,6 +35,7 @@ public class ProcessView extends VerticalLayout {
     private final GpuMonitor gpuMonitor;
     private final Path outputDirectory;
     private final LogPanel logPanel;
+    private final AiToolkitService aiToolkitService;
 
     private final FlexLayout samplesLayout = new FlexLayout();
 
@@ -42,17 +45,28 @@ public class ProcessView extends VerticalLayout {
     private final ProgressBar gpuMemBar = new ProgressBar(0, 100, 0);
     private final Span gpuMemLabel = new Span("GPU Mem: -");
 
+    private final Button cancelButton;
+
     private int lastSampleCount = 0;
 
-    public ProcessView(GpuMonitor gpuMonitor, LogPanel logPanel, WorkspaceProperties workspaceProperties) {
+    public ProcessView(GpuMonitor gpuMonitor, LogPanel logPanel, WorkspaceProperties workspaceProperties, AiToolkitService aiToolkitService) {
         this.gpuMonitor = gpuMonitor;
         this.logPanel = logPanel;
         this.outputDirectory = workspaceProperties.getOutputPath().resolve("latest");
+        this.aiToolkitService = aiToolkitService;
 
         ensureOutputDirectoryExists();
 
         setPadding(true);
         setSpacing(true);
+
+        cancelButton =
+                new com.vaadin.flow.component.button.Button("Stop training", e -> {
+                    aiToolkitService.cancelCurrent();
+                    logPanel.log("Training cancelled by user.");
+                });
+
+        cancelButton.setEnabled(aiToolkitService.isRunning());
 
         gpuUtilBar.setWidth(300, Unit.PIXELS);
         gpuMemBar.setWidth(300, Unit.PIXELS);
@@ -81,7 +95,9 @@ public class ProcessView extends VerticalLayout {
         gpuOuter.setPadding(false);
         gpuOuter.setAlignItems(Alignment.CENTER);
 
-        add(gpuOuter, samplesLayout);
+        setAlignItems(Alignment.CENTER);
+
+        add(cancelButton, gpuOuter, samplesLayout);
     }
 
 
@@ -110,6 +126,7 @@ public class ProcessView extends VerticalLayout {
     public void refresh() {
         refreshSamples();
         refreshGpuStats();
+        cancelButton.setEnabled(aiToolkitService.isRunning());
     }
 
     private void refreshGpuStats() {
