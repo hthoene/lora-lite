@@ -34,22 +34,25 @@ public class LogView extends VerticalLayout {
         UI ui = attachEvent.getUI();
         File logFile = logPanel.getLogFile();
 
+        long initialSize = 0L;
         try {
             String all = Files.readString(logFile.toPath(), StandardCharsets.UTF_8);
             if (!all.isBlank()) {
                 logPanel.appendToUi(all);
+                initialSize = logFile.length();
             }
         } catch (IOException e) {
             log.warn("Could not read log file", e);
         }
 
-        tailThread = new Thread(() -> tailLogFile(ui, logFile), "log-tail-thread");
+        long startOffset = initialSize;
+        tailThread = new Thread(() -> tailLogFile(ui, logFile, startOffset), "log-tail-thread");
         tailThread.setDaemon(true);
         tailThread.start();
     }
 
-    private void tailLogFile(UI ui, File logFile) {
-        long lastSize = 0L;
+    private void tailLogFile(UI ui, File logFile, long initialOffset) {
+        long lastSize = initialOffset;
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 long size = logFile.length();
