@@ -21,7 +21,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 public class ConfigurationForm extends VerticalLayout {
-
     private static final String DEFAULT_PROMPT = "photo of <token>";
     private static final String DEFAULT_TRIGGER_WORD = "TOK";
     private static final String CONFIG_NAME = "latest";
@@ -189,10 +188,12 @@ public class ConfigurationForm extends VerticalLayout {
         resolutionXField.setMin(128);
         resolutionXField.setMax(2048);
         resolutionXField.setStep(64);
+        resolutionXField.setStepButtonsVisible(true);
 
         resolutionYField.setMin(128);
         resolutionYField.setMax(2048);
         resolutionYField.setStep(64);
+        resolutionYField.setStepButtonsVisible(true);
 
         stepsField.setMin(100);
 
@@ -201,6 +202,7 @@ public class ConfigurationForm extends VerticalLayout {
 
         batchSizeField.setMin(1);
         batchSizeField.setMax(4);
+        batchSizeField.setStepButtonsVisible(true);
 
         learningRateField.setMin(1e-6);
         learningRateField.setMax(1e-3);
