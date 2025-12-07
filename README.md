@@ -25,36 +25,41 @@ It is meant for personal use and experiments, not for multi-user or production d
 ## Quick start with Docker
 
 1. Make sure Docker and docker-compose are installed on your machine.
-   2. Save the following as `docker-compose.yml` in an empty folder:
+2. Save the following as `docker-compose.yml` in an empty folder:
 
-            services:
-               lora-lite:
-                   image: thoenehannes/lora-lite-amd:latest
-                   container_name: lora-lite
-                   restart: unless-stopped
-                   devices:
-                       - /dev/kfd
-                       - /dev/dri
-                  security_opt:
-                       - seccomp=unconfined
-                       - ipc: host
-                   shm_size: "16g"
-                   ports:
-                       - "127.0.0.1:8080:8080"
-                  volumes:
-                       - ./data/dataset:/workspace/dataset
-                       - ./data/output:/workspace/output
-                       - ./data/configs:/workspace/configs
-                       - ./data/logs:/workspace/logs
-                       - ./data/hf-cache:/workspace/.cache/huggingface
-                       - ./data/archive:/workspace/archive
-                       - ./data/templates:/workspace/templates
-                  environment:
-                       - VAADIN_PRODUCTION_MODE=true
-                       - AI_TOOLKIT_AUTH=${AI_TOOLKIT_AUTH:-password}
-                       - HF_HOME=/workspace/.cache/huggingface
-                       - TRANSFORMERS_CACHE=/workspace/.cache/huggingface
-                  working_dir: /workspace
+          services:
+            lora-lite:
+              image: thoenehannes/lora-lite-amd:latest
+              container_name: lora-lite
+              restart: unless-stopped
+              user: "1000:1000"
+              group_add:
+                - "44" # (Check your host video group id)
+                - "992" # (Check your host render group id)
+              devices:
+                - /dev/kfd
+                - /dev/dri
+              security_opt:
+                - seccomp=unconfined
+              ipc: host
+              shm_size: "16g"
+              ports:
+                - "127.0.0.1:8080:8080"
+              volumes:
+                - ./data/dataset:/workspace/dataset
+                - ./data/output:/workspace/output
+                - ./data/configs:/workspace/configs
+                - ./data/logs:/workspace/logs
+                - ./data/hf-cache:/workspace/.cache/huggingface
+                - ./data/archive:/workspace/archive
+                - ./data/templates:/workspace/templates
+              environment:
+                - VAADIN_PRODUCTION_MODE=true
+                - AI_TOOLKIT_AUTH=${AI_TOOLKIT_AUTH:-password}
+                - HF_HOME=/workspace/.cache/huggingface
+                - TRANSFORMERS_CACHE=/workspace/.cache/huggingface
+                - HF_TOKEN=<YOUR_HUGGINGFACE_TOKEN>
+              working_dir: /workspace
 
 3. Start LoRA-Lite:
 
