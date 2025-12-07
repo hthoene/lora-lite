@@ -1,4 +1,4 @@
-# LoRA-Lite
+# LoRA-Lite (Flux)
 
 LoRA-Lite is a simple web interface for training LoRA models on AMD GPUs – no command line, no manual wiring.    
 You start a Docker container, open the browser, and manage your datasets, templates, and training runs from a single page.
