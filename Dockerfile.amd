@@ -32,8 +32,6 @@ COPY gpu-monitor/gpu_monitor.py /workspace/monitor/gpu_monitor.py
 RUN chmod +x /workspace/monitor/gpu_monitor.py && \
     chown -R 1000:1000 /workspace/monitor
 
-COPY templates/ /workspace/templates
-
 COPY target/app.jar /workspace/app.jar
 RUN chown 1000:1000 /workspace/app.jar
 
