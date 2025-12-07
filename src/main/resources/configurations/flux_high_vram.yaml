@@ -11,8 +11,8 @@ config:
 
       network:
         type: lora
-        linear: 4
-        linear_alpha: 4
+        linear: 6
+        linear_alpha: 6
         network_kwargs:
           only_if_contains:
             - attn
@@ -26,8 +26,8 @@ config:
 
       save:
         dtype: bf16
-        save_every: 500
-        max_step_saves_to_keep: 3
+        save_every: 400
+        max_step_saves_to_keep: 4
         push_to_hub: false
         hf_repo_id: null
         hf_private: true
@@ -36,21 +36,21 @@ config:
       datasets:
         - folder_path: /workspace/dataset
           caption_ext: ".txt"
-          caption_dropout_rate: 0.1
+          caption_dropout_rate: 0.05
           shuffle_tokens: true
           cache_latents_to_disk: true
-          resolution: [512, 512]
+          resolution: [1024, 1024]
           extra: {}
 
       train:
         batch_size: 1
-        steps: 1800
+        steps: 2400
         gradient_accumulation_steps: 2
         train_unet: true
         train_text_encoder: false
         gradient_checkpointing: true
         noise_scheduler: flowmatch
-        optimizer: adafactor
+        optimizer: adamw
         lr: 0.0001
         skip_first_sample: true
         disable_sampling: false
@@ -73,8 +73,8 @@ config:
       sample:
         sampler: flowmatch
         sample_every: 100
-        width: 512
-        height: 512
+        width: 1024
+        height: 1024
         prompts:
           - "photo of <token>"
         neg: "low quality, blurry"
@@ -87,6 +87,6 @@ config:
       extra: {}
 
 meta:
-  name: LoRA-Lite Low VRAM
+  name: LoRA-Lite High VRAM
   version: "1.0.0"
   extra: {}

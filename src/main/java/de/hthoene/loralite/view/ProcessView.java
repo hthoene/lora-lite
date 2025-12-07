@@ -47,7 +47,7 @@ public class ProcessView extends VerticalLayout {
 
     private final Button cancelButton;
 
-    private int lastSampleCount = 0;
+    private int lastSampleCount = -1;
 
     public ProcessView(GpuMonitor gpuMonitor, LogPanel logPanel, WorkspaceProperties workspaceProperties, AiToolkitService aiToolkitService) {
         this.gpuMonitor = gpuMonitor;
@@ -158,17 +158,23 @@ public class ProcessView extends VerticalLayout {
     private void refreshSamples() {
         Path samplesDir = outputDirectory.resolve("samples");
         File dir = samplesDir.toFile();
-        File[] files = dir.exists() ? dir.listFiles() : null;
+        File[] files = (dir.exists() && dir.isDirectory()) ? dir.listFiles() : new File[0];
 
-        int currentCount = (files == null) ? 0 :
-                (int) Arrays.stream(files)
-                        .filter(File::isFile)
-                        .filter(this::isImageFile)
-                        .count();
+        if (files == null) {
+            files = new File[0];
+        }
 
-        if (currentCount == lastSampleCount) {
+        int currentCount = (int) Arrays.stream(files)
+                .filter(File::isFile)
+                .filter(this::isImageFile)
+                .count();
+
+        boolean layoutHasContent = samplesLayout.getComponentCount() > 0;
+
+        if (currentCount == lastSampleCount && layoutHasContent) {
             return;
         }
+
         lastSampleCount = currentCount;
 
         samplesLayout.removeAll();
