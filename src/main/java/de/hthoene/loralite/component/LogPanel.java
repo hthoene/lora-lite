@@ -23,6 +23,8 @@ public class LogPanel extends VerticalLayout {
     private final TextArea logArea = new TextArea();
     private final File logFile;
 
+    private String lastLine;
+
     public LogPanel(WorkspaceProperties workspaceProperties) throws IOException {
         Path logFolderPath = workspaceProperties.getLogsPath();
         Files.createDirectories(logFolderPath);
@@ -58,11 +60,33 @@ public class LogPanel extends VerticalLayout {
         if (cleaned.isBlank()) {
             return;
         }
+
+        String[] lines = cleaned.split("\\R");
+        StringBuilder toAppend = new StringBuilder();
+
+        for (String line : lines) {
+            if (line.isBlank()) {
+                continue;
+            }
+            if (line.equals(lastLine)) {
+                continue;
+            }
+            if (toAppend.length() > 0) {
+                toAppend.append("\n");
+            }
+            toAppend.append(line);
+            lastLine = line;
+        }
+
+        if (toAppend.length() == 0) {
+            return;
+        }
+
         String current = logArea.getValue();
         if (current == null || current.isBlank()) {
-            logArea.setValue(cleaned);
+            logArea.setValue(toAppend.toString());
         } else {
-            logArea.setValue(current + "\n" + cleaned);
+            logArea.setValue(current + "\n" + toAppend);
         }
         logArea.scrollToEnd();
     }
@@ -89,19 +113,12 @@ public class LogPanel extends VerticalLayout {
             );
         } catch (IOException e) {
             log.warn("Could not write to log file", e);
-            return;
         }
-        try {
-            String content = Files.readString(logFile.toPath()).trim();
-            logArea.setValue(content);
-        } catch (IOException e) {
-            log.warn("Could not read log file", e);
-        }
-        logArea.scrollToEnd();
     }
 
     public void clearUi() {
         logArea.setValue("");
+        lastLine = null;
     }
 
     private static String stripAnsi(String s) {

@@ -34,19 +34,22 @@ public class LogView extends VerticalLayout {
         UI ui = attachEvent.getUI();
         File logFile = logPanel.getLogFile();
 
-        long initialSize = 0L;
+        long startOffset = 0L;
         try {
             String all = Files.readString(logFile.toPath(), StandardCharsets.UTF_8);
             if (!all.isBlank()) {
                 logPanel.appendToUi(all);
-                initialSize = logFile.length();
+                startOffset = logFile.length();
+            } else {
+                startOffset = logFile.length();
             }
         } catch (IOException e) {
             log.warn("Could not read log file", e);
+            startOffset = logFile.length();
         }
 
-        long startOffset = initialSize;
-        tailThread = new Thread(() -> tailLogFile(ui, logFile, startOffset), "log-tail-thread");
+        final long initialOffset = startOffset;
+        tailThread = new Thread(() -> tailLogFile(ui, logFile, initialOffset), "log-tail-thread");
         tailThread.setDaemon(true);
         tailThread.start();
     }
@@ -81,7 +84,6 @@ public class LogView extends VerticalLayout {
         }
     }
 
-
     private static String readFromOffset(Path path, long offset) throws IOException {
         try (RandomAccessFile raf = new RandomAccessFile(path.toFile(), "r")) {
             long fileLength = raf.length();
@@ -91,7 +93,7 @@ public class LogView extends VerticalLayout {
             raf.seek(offset);
 
             long delta = fileLength - offset;
-            int toRead = (int) Math.min(delta, 64 * 1024); // max 64 KB pro Schritt
+            int toRead = (int) Math.min(delta, 64 * 1024);
             byte[] buffer = new byte[toRead];
             int read = raf.read(buffer);
             if (read <= 0) {
