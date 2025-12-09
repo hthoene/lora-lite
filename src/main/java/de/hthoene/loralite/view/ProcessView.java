@@ -220,7 +220,7 @@ public class ProcessView extends VerticalLayout {
         safetensorsLayout.removeAll();
 
         if (currentCount == 0) {
-            safetensorsLayout.add(new Span("Noch keine fertigen Modelle (.safetensors)"));
+            safetensorsLayout.add(new Span("Nothing to download (.safetensors)"));
             return;
         }
 
