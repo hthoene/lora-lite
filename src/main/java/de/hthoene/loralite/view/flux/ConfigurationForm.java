@@ -42,6 +42,9 @@ public class ConfigurationForm extends VerticalLayout {
     private final Checkbox lowVramField = new Checkbox("Low VRAM Mode");
     private final Checkbox quantizeField = new Checkbox("Quantize Model");
 
+    private final IntegerField saveEveryField = new IntegerField("Save Every N Steps");
+    private final IntegerField maxStepSavesToKeepField = new IntegerField("Max Step Saves To Keep");
+
     private final IntegerField sampleEveryNStepsField = new IntegerField("Sample Every N Steps");
     private final TextArea samplePromptsField = new TextArea("Sample Prompts (one per line)");
 
@@ -72,13 +75,13 @@ public class ConfigurationForm extends VerticalLayout {
         VerticalLayout templateGroup = createGroup(null, createSimpleForm(templateSelect));
 
         FormLayout imageAndTrainingLayout = new FormLayout(
+                triggerWordField,
                 resolutionXField,
                 resolutionYField,
                 stepsField,
                 rankField,
                 batchSizeField,
-                learningRateField,
-                triggerWordField
+                learningRateField
         );
         imageAndTrainingLayout.setWidthFull();
         imageAndTrainingLayout.getStyle().set("margin", "0").set("padding", "0");
@@ -94,7 +97,9 @@ public class ConfigurationForm extends VerticalLayout {
                 dtypeField,
                 gradientCheckpointingField,
                 lowVramField,
-                quantizeField
+                quantizeField,
+                saveEveryField,
+                maxStepSavesToKeepField
         );
         performanceLayout.setWidthFull();
         performanceLayout.getStyle().set("margin", "0").set("padding", "0");
@@ -104,6 +109,18 @@ public class ConfigurationForm extends VerticalLayout {
                 new FormLayout.ResponsiveStep("900px", 3)
         );
         VerticalLayout performanceGroup = createGroup("Performance & VRAM", performanceLayout);
+
+        FormLayout saveLayout = new FormLayout(
+                saveEveryField,
+                maxStepSavesToKeepField
+        );
+        saveLayout.setWidthFull();
+        saveLayout.getStyle().set("margin", "0").set("padding", "0");
+        saveLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
+        );
+        VerticalLayout saveGroup = createGroup("Saving", saveLayout);
 
         FormLayout samplingLayout = new FormLayout(
                 sampleEveryNStepsField,
@@ -119,7 +136,7 @@ public class ConfigurationForm extends VerticalLayout {
         VerticalLayout samplingGroup = createGroup("Sampling", samplingLayout);
         samplingGroup.getStyle().set("margin-bottom", "0");
 
-        add(templateGroup, imageAndTrainingGroup, performanceGroup, samplingGroup);
+        add(templateGroup, imageAndTrainingGroup, performanceGroup, saveGroup, samplingGroup);
     }
 
     private VerticalLayout createGroup(String title, Component content) {
@@ -207,6 +224,14 @@ public class ConfigurationForm extends VerticalLayout {
         learningRateField.setMin(1e-6);
         learningRateField.setMax(1e-3);
 
+        saveEveryField.setMin(1);
+        saveEveryField.setMax(100_000);
+        saveEveryField.setStepButtonsVisible(true);
+
+        maxStepSavesToKeepField.setMin(1);
+        maxStepSavesToKeepField.setMax(100);
+        maxStepSavesToKeepField.setStepButtonsVisible(true);
+
         sampleEveryNStepsField.setMin(10);
         sampleEveryNStepsField.setMax(10_000);
 
@@ -227,7 +252,7 @@ public class ConfigurationForm extends VerticalLayout {
         learningRateField.setTitle("Speed of learning. Higher values train faster but may be unstable; lower values are safer but slower.");
         triggerWordField.setTitle(
                 "Unique keyword used in captions and prompts to activate this LoRA. " +
-                        "Use the same token (e.g. <token>) in your training captions and sample prompts."
+                        "Use <token> in your training captions and sample prompts to auto fill the keyword in."
         );
 
         gradientCheckpointingField.getElement()
@@ -240,8 +265,10 @@ public class ConfigurationForm extends VerticalLayout {
                 .setProperty("title", "Enables additional memory-saving tricks. Uses less VRAM at the cost of some speed.");
         quantizeField.getElement()
                 .setProperty("title", "Quantizes model weights to lower precision. Greatly reduces VRAM usage with potential small quality or stability impact.");
+        saveEveryField.setTitle("How often to save LoRA weights during training. Lower values create more checkpoints but use more disk space.");
+        maxStepSavesToKeepField.setTitle("How many intermediate step checkpoints to keep. Older checkpoints are deleted when this limit is exceeded.");
 
-        sampleEveryNStepsField.setTitle("How often to generate preview samples. Lower values show more previews but slow training slightly.");
+        sampleEveryNStepsField.setTitle("How often to generate preview samples. Lower values show more previews but slow training slightly.");
         samplePromptsField.setTitle("Prompts used for preview samples during training. Affects only sampling time, not VRAM usage much.");
     }
 
@@ -266,7 +293,9 @@ public class ConfigurationForm extends VerticalLayout {
                 settings.getDtype() != null ||
                 settings.getLowVram() != null ||
                 settings.getQuantize() != null ||
-                settings.getTriggerWord() != null;
+                settings.getTriggerWord() != null ||
+                settings.getSaveEvery() != null ||
+                settings.getMaxStepSavesToKeep() != null;
     }
 
     private void applyTemplateDefaultsToSettings(JobConfiguration template) {
@@ -286,6 +315,7 @@ public class ConfigurationForm extends VerticalLayout {
                 : null;
         JobConfiguration.Network network = processItem.getNetwork();
         JobConfiguration.Model model = processItem.getModel();
+        JobConfiguration.Save save = processItem.getSave();
 
         if (train != null && train.getSteps() != null) {
             settings.setSteps(train.getSteps());
@@ -329,6 +359,12 @@ public class ConfigurationForm extends VerticalLayout {
         if (processItem.getTriggerWord() != null) {
             settings.setTriggerWord(processItem.getTriggerWord());
         }
+        if (save != null && save.getSaveEvery() != null) {
+            settings.setSaveEvery(save.getSaveEvery());
+        }
+        if (save != null && save.getMaxStepSavesToKeep() != null) {
+            settings.setMaxStepSavesToKeep(save.getMaxStepSavesToKeep());
+        }
     }
 
     private int orDefault(Integer value, int fallback) {
@@ -355,6 +391,9 @@ public class ConfigurationForm extends VerticalLayout {
         batchSizeField.setValue(orDefault(settings.getBatchSize(), 1));
         learningRateField.setValue(orDefault(settings.getLearningRate(), 1e-4));
         sampleEveryNStepsField.setValue(orDefault(settings.getSampleEveryNSteps(), 100));
+
+        saveEveryField.setValue(orDefault(settings.getSaveEvery(), 500));
+        maxStepSavesToKeepField.setValue(orDefault(settings.getMaxStepSavesToKeep(), 3));
 
         samplePromptsField.setValue(orDefault(settings.getSamplePrompts(), DEFAULT_PROMPT));
         triggerWordField.setValue(orDefault(settings.getTriggerWord(), DEFAULT_TRIGGER_WORD));
@@ -428,6 +467,8 @@ public class ConfigurationForm extends VerticalLayout {
         bind(dtypeField, settings::setDtype);
         bind(lowVramField, settings::setLowVram);
         bind(quantizeField, settings::setQuantize);
+        bind(saveEveryField, settings::setSaveEvery);
+        bind(maxStepSavesToKeepField, settings::setMaxStepSavesToKeep);
     }
 
     public JobConfiguration buildConfig() {
@@ -485,12 +526,18 @@ public class ConfigurationForm extends VerticalLayout {
                 .quantize(quantizeField.getValue())
                 .build();
 
+        JobConfiguration.Save save = base.getSave().toBuilder()
+                .saveEvery(saveEveryField.getValue())
+                .maxStepSavesToKeep(maxStepSavesToKeepField.getValue())
+                .build();
+
         JobConfiguration.ProcessItem process = base.toBuilder()
                 .network(network)
                 .train(train)
                 .sample(sample)
                 .datasets(List.of(dataset))
                 .model(model)
+                .save(save)
                 .triggerWord(triggerWordField.getValue())
                 .build();
 

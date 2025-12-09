@@ -10,7 +10,6 @@ def is_cmd_available(cmd: str) -> bool:
 
 
 def query_nvidia():
-    # Nutzung + VRAM über nvidia-smi im CSV-Format holen. [web:47][web:49][web:52]
     cmd = [
         "nvidia-smi",
         "--query-gpu=index,utilization.gpu,memory.used,memory.total",
@@ -39,7 +38,6 @@ def query_amd():
     cmd = ["rocm-smi", "--showuse", "--showmeminfo", "vram", "--json"]
     out = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode("utf-8")
 
-    # Alles vor dem ersten '{' wegschneiden (Warnungen entfernen)
     json_start = out.find("{")
     if json_start == -1:
         raise RuntimeError(f"Unexpected rocm-smi output, no '{{' found: {out!r}")

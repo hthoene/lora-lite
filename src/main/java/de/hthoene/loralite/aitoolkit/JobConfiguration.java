@@ -13,8 +13,6 @@ import java.util.Map;
 @Builder(toBuilder = true)
 public class JobConfiguration {
 
-    // ===================== Enums =====================
-
     public enum JobType {
         @JsonProperty("extension")
         EXTENSION("extension");
@@ -30,7 +28,9 @@ public class JobConfiguration {
 
     public enum ProcessType {
         @JsonProperty("sd_trainer")
-        SD_TRAINER("sd_trainer");
+        SD_TRAINER("sd_trainer"),
+        @JsonProperty("diffusion_trainer")
+        DIFFUSION_TRAINER("diffusion_trainer");
 
         private final String value;
         ProcessType(String value) { this.value = value; }
@@ -45,7 +45,7 @@ public class JobConfiguration {
         @JsonProperty("lora")
         LORA("lora"),
         @JsonProperty("lokr")
-        LOKR("lokr"); // optional, falls du LoKR-Configs auch unterstützen willst
+        LOKR("lokr");
 
         private final String value;
         NetworkType(String value) { this.value = value; }
@@ -114,10 +114,8 @@ public class JobConfiguration {
         }
     }
 
-    // ===================== Root =====================
-
     @JsonProperty("job")
-    private JobType job; // "extension"
+    private JobType job;
 
     @JsonProperty("config")
     private Config config;
@@ -125,15 +123,12 @@ public class JobConfiguration {
     @JsonProperty("meta")
     private Meta meta;
 
-    // ===================== Nested Classes =====================
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder(toBuilder = true)
     public static class Config {
 
-        // this name will be the folder and filename name
         @JsonProperty("name")
         private String name;
 
@@ -180,7 +175,6 @@ public class JobConfiguration {
         @JsonProperty("sample")
         private Sample sample;
 
-        // generic bag for all future/undokumentierte Felder
         @JsonProperty("extra")
         private Map<String, Object> extra;
     }
@@ -335,6 +329,16 @@ public class JobConfiguration {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder(toBuilder = true)
+    public static class TrainingAdapter {
+
+        @JsonProperty("name_or_path")
+        private String nameOrPath;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder(toBuilder = true)
     public static class Model {
 
         @JsonProperty("name_or_path")
@@ -346,11 +350,38 @@ public class JobConfiguration {
         @JsonProperty("quantize")
         private Boolean quantize;
 
+        @JsonProperty("qtype")
+        private String qtype;
+
+        @JsonProperty("quantize_te")
+        private Boolean quantizeTe;
+
+        @JsonProperty("qtype_te")
+        private String qtypeTe;
+
+        @JsonProperty("arch")
+        private String arch;
+
         @JsonProperty("low_vram")
         private Boolean lowVram;
 
+        @JsonProperty("model_kwargs")
+        private Map<String, Object> modelKwargs;
+
+        @JsonProperty("layer_offloading")
+        private Boolean layerOffloading;
+
+        @JsonProperty("layer_offloading_text_encoder_percent")
+        private Integer layerOffloadingTextEncoderPercent;
+
+        @JsonProperty("layer_offloading_transformer_percent")
+        private Integer layerOffloadingTransformerPercent;
+
         @JsonProperty("assistant_lora_path")
         private String assistantLoraPath;
+
+        @JsonProperty("training_adapter")
+        private TrainingAdapter trainingAdapter;
 
         @JsonProperty("extra")
         private Map<String, Object> extra;

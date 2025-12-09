@@ -3,6 +3,7 @@ package de.hthoene.loralite.view;
 import com.vaadin.flow.component.Unit;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
@@ -38,6 +39,7 @@ public class ProcessView extends VerticalLayout {
     private final AiToolkitService aiToolkitService;
 
     private final FlexLayout samplesLayout = new FlexLayout();
+    private final FlexLayout safetensorsLayout = new FlexLayout();
 
     private final ProgressBar gpuUtilBar = new ProgressBar(0, 100, 0);
     private final Span gpuUtilLabel = new Span("GPU Util: -");
@@ -48,6 +50,7 @@ public class ProcessView extends VerticalLayout {
     private final Button cancelButton;
 
     private int lastSampleCount = -1;
+    private int lastSafetensorsCount = -1;
 
     public ProcessView(GpuMonitor gpuMonitor, LogPanel logPanel, WorkspaceProperties workspaceProperties, AiToolkitService aiToolkitService) {
         this.gpuMonitor = gpuMonitor;
@@ -60,11 +63,10 @@ public class ProcessView extends VerticalLayout {
         setPadding(true);
         setSpacing(true);
 
-        cancelButton =
-                new com.vaadin.flow.component.button.Button("Stop training", e -> {
-                    aiToolkitService.cancelCurrent();
-                    logPanel.log("Training cancelled by user.");
-                });
+        cancelButton = new Button("Stop training", e -> {
+            aiToolkitService.cancelCurrent();
+            logPanel.log("Training cancelled by user.");
+        });
 
         cancelButton.setEnabled(aiToolkitService.isRunning());
 
@@ -74,7 +76,8 @@ public class ProcessView extends VerticalLayout {
         gpuUtilLabel.setWidth("256px");
         gpuMemLabel.setWidth("256px");
 
-        setupSamplesLayout();
+        setupFlexLayout(samplesLayout);
+        setupFlexLayout(safetensorsLayout);
 
         HorizontalLayout gpuUtilLayout = new HorizontalLayout(gpuUtilLabel, gpuUtilBar);
         gpuUtilLayout.setWidthFull();
@@ -97,9 +100,8 @@ public class ProcessView extends VerticalLayout {
 
         setAlignItems(Alignment.CENTER);
 
-        add(cancelButton, gpuOuter, samplesLayout);
+        add(cancelButton, gpuOuter, samplesLayout, safetensorsLayout);
     }
-
 
     private void ensureOutputDirectoryExists() {
         if (!outputDirectory.toFile().exists()) {
@@ -112,19 +114,20 @@ public class ProcessView extends VerticalLayout {
         }
     }
 
-    private void setupSamplesLayout() {
-        samplesLayout.setWidthFull();
-        samplesLayout.getStyle().set("overflow-x", "auto");
-        samplesLayout.getStyle().set("box-sizing", "border-box");
-        samplesLayout.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
-        samplesLayout.getStyle().set("padding", "1rem");
-        samplesLayout.getStyle().set("border-radius", "0.5rem");
-        samplesLayout.getStyle().set("gap", "0.5rem");
-        samplesLayout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
+    private void setupFlexLayout(FlexLayout layout) {
+        layout.setWidthFull();
+        layout.getStyle().set("overflow-x", "auto");
+        layout.getStyle().set("box-sizing", "border-box");
+        layout.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
+        layout.getStyle().set("padding", "1rem");
+        layout.getStyle().set("border-radius", "0.5rem");
+        layout.getStyle().set("gap", "0.5rem");
+        layout.setFlexWrap(FlexLayout.FlexWrap.WRAP);
     }
 
     public void refresh() {
         refreshSamples();
+        refreshSafetensors();
         refreshGpuStats();
         cancelButton.setEnabled(aiToolkitService.isRunning());
     }
@@ -191,6 +194,71 @@ public class ProcessView extends VerticalLayout {
                 .forEach(this::addSampleThumbnail);
     }
 
+    private void refreshSafetensors() {
+        File dir = outputDirectory.toFile();
+        File[] files = (dir.exists() && dir.isDirectory()) ? dir.listFiles() : new File[0];
+
+        if (files == null) {
+            files = new File[0];
+        }
+
+        File[] safetensors = Arrays.stream(files)
+                .filter(File::isFile)
+                .filter(f -> f.getName().toLowerCase(Locale.ROOT).endsWith(".safetensors"))
+                .sorted(Comparator.comparingLong(File::lastModified).reversed())
+                .toArray(File[]::new);
+
+        int currentCount = safetensors.length;
+        boolean layoutHasContent = safetensorsLayout.getComponentCount() > 0;
+
+        if (currentCount == lastSafetensorsCount && layoutHasContent) {
+            return;
+        }
+
+        lastSafetensorsCount = currentCount;
+
+        safetensorsLayout.removeAll();
+
+        if (currentCount == 0) {
+            safetensorsLayout.add(new Span("Noch keine fertigen Modelle (.safetensors)"));
+            return;
+        }
+
+        Arrays.stream(safetensors).forEach(this::addSafetensorsDownload);
+    }
+
+    private DownloadHandler createDownloadHandler(Path path, String filename, String mimeType) {
+        return DownloadHandler.fromInputStream(event -> {
+            try {
+                return new DownloadResponse(
+                        Files.newInputStream(path),
+                        filename,
+                        mimeType,
+                        Files.size(path)
+                );
+            } catch (IOException e) {
+                logPanel.log(e);
+                event.getResponse().setStatus(500);
+                return DownloadResponse.error(500);
+            }
+        });
+    }
+
+    private void addSafetensorsDownload(File modelFile) {
+        Path modelPath = modelFile.toPath();
+        DownloadHandler handler = createDownloadHandler(modelPath, modelFile.getName(), "application/octet-stream");
+
+        Button downloadButton = new Button(modelFile.getName());
+        downloadButton.getElement().setProperty("title", "Download " + modelFile.getName());
+        downloadButton.getStyle().set("cursor", "pointer");
+
+        Anchor anchor = new Anchor(handler, "");
+        anchor.getElement().setAttribute("download", true);
+        anchor.add(downloadButton);
+
+        safetensorsLayout.add(anchor);
+    }
+
     private boolean isImageFile(File f) {
         String name = f.getName().toLowerCase(Locale.ROOT);
         return Arrays.stream(ALLOWED_IMAGE_FILE_TYPES)
@@ -200,24 +268,18 @@ public class ProcessView extends VerticalLayout {
     private void addSampleThumbnail(File imageFile) {
         Path imagePath = imageFile.toPath();
 
-        DownloadHandler handler = DownloadHandler.fromInputStream(event -> {
-            try {
-                String mimeType = Files.probeContentType(imagePath);
-                if (mimeType == null) {
-                    mimeType = "application/octet-stream";
-                }
-                return new DownloadResponse(
-                        Files.newInputStream(imagePath),
-                        imageFile.getName(),
-                        mimeType,
-                        Files.size(imagePath)
-                );
-            } catch (IOException e) {
-                logPanel.log(e);
-                event.getResponse().setStatus(500);
-                return DownloadResponse.error(500);
-            }
-        });
+        String mimeType;
+        try {
+            mimeType = Files.probeContentType(imagePath);
+        } catch (IOException e) {
+            logPanel.log(e);
+            mimeType = null;
+        }
+        if (mimeType == null) {
+            mimeType = "application/octet-stream";
+        }
+
+        DownloadHandler handler = createDownloadHandler(imagePath, imageFile.getName(), mimeType);
 
         Image img = new Image(handler, imageFile.getName());
         img.setMaxHeight("15rem");

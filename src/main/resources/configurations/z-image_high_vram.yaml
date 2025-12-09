@@ -1,0 +1,101 @@
+job: extension
+
+config:
+  name: latest
+  process:
+    - type: diffusion_trainer
+      training_folder: /workspace/output
+      performance_log_every: 100
+      device: cuda
+      trigger_word: "TOK"
+
+      network:
+        type: lora
+        linear: 6
+        linear_alpha: 6
+        network_kwargs:
+          only_if_contains:
+            - attn
+            - to_q
+            - to_k
+            - to_v
+          ignore_if_contains:
+            - img_enc
+            - text_enc
+        extra: {}
+
+      save:
+        dtype: bf16
+        save_every: 400
+        max_step_saves_to_keep: 4
+        push_to_hub: false
+        hf_repo_id: null
+        hf_private: true
+        extra: {}
+
+      datasets:
+        - folder_path: /workspace/dataset
+          caption_ext: ".txt"
+          caption_dropout_rate: 0.05
+          shuffle_tokens: true
+          cache_latents_to_disk: true
+          resolution: [1024, 1024]
+          extra: {}
+
+      train:
+        batch_size: 1
+        steps: 2400
+        gradient_accumulation_steps: 2
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: flowmatch
+        optimizer: adafactor
+        lr: 0.0001
+        skip_first_sample: true
+        disable_sampling: false
+        linear_timesteps: false
+        ema_config:
+          use_ema: true
+          ema_decay: 0.999
+          extra: {}
+        dtype: bf16
+        extra: {}
+
+      model:
+        name_or_path: Tongyi-MAI/Z-Image-Turbo
+        is_flux: false
+        quantize: false
+        qtype: qfloat8
+        quantize_te: false
+        qtype_te: qfloat8
+        arch: zimage:turbo
+        low_vram: false
+        model_kwargs: {}
+        layer_offloading: false
+        layer_offloading_text_encoder_percent: 1
+        layer_offloading_transformer_percent: 1
+        assistant_lora_path: ostris/zimage_turbo_training_adapter/zimage_turbo_training_adapter_v1.safetensors
+        training_adapter: null
+        extra: {}
+
+      sample:
+        sampler: flowmatch
+        sample_every: 100
+        width: 1024
+        height: 1024
+        prompts:
+          - "photo of <token>"
+        neg: "low quality, blurry"
+        seed: 1234567
+        walk_seed: true
+        guidance_scale: 1.0
+        sample_steps: 8
+        extra: {}
+
+      extra: {}
+
+meta:
+  name: LoRA-Lite High VRAM Z-Image
+  version: "1.0.0"
+  extra: {}

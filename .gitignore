@@ -45,3 +45,4 @@ build/
 /vite.config.ts
 /vite.generated.ts
 /local/
+/Dockerfile.test

@@ -32,10 +32,10 @@ COPY gpu-monitor/gpu_monitor.py /workspace/monitor/gpu_monitor.py
 RUN chmod +x /workspace/monitor/gpu_monitor.py && \
     chown -R 1000:1000 /workspace/monitor
 
-COPY target/app.jar /workspace/app.jar
-RUN chown 1000:1000 /workspace/app.jar
+COPY target/app.jar /opt/app.jar
+RUN chown 1000:1000 /opt/app.jar
 
 EXPOSE 8080
 
 USER 1000:1000
-ENTRYPOINT ["java", "-jar", "/workspace/app.jar"]
+ENTRYPOINT ["java", "-jar", "/opt/app.jar"]

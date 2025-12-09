@@ -21,4 +21,7 @@ public class UiSettings {
     private JobConfiguration.DType dtype;
     private Boolean lowVram;
     private Boolean quantize;
+
+    private Integer saveEvery;
+    private Integer maxStepSavesToKeep;
 }
